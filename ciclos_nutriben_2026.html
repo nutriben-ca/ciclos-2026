@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ciclos Nutriben 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+  :root{--navy:#0033A1;--sky:#00A0DF;--bg:#f0f4fb;--surface:#fff;--text:#0d1a2e;--muted:#6b7a96;--border:#dce4f0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:28px 16px 48px;}
+
+  .hdr{text-align:center;margin-bottom:22px;}
+  .hdr-badge{display:inline-block;background:var(--navy);color:#fff;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:3px 12px;border-radius:20px;margin-bottom:10px;}
+  .hdr h1{font-size:24px;font-weight:800;color:var(--navy);letter-spacing:-.02em;}
+  .hdr p{font-size:13px;color:var(--muted);margin-top:3px;}
+
+  .selector{display:flex;justify-content:center;gap:10px;margin-bottom:18px;}
+  .sel-btn{display:flex;align-items:center;gap:8px;padding:10px 26px;border-radius:50px;border:2px solid var(--border);background:var(--surface);cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);transition:all .18s;font-family:inherit;}
+  .sel-btn .flag{font-size:20px;}
+  .sel-btn:hover{border-color:var(--sky);color:var(--navy);}
+  .sel-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;box-shadow:0 4px 16px rgba(0,51,161,.25);}
+
+  /* ACTIVE BANNER */
+  .active-banner{max-width:900px;margin:0 auto 20px;background:var(--navy);border-radius:14px;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .ab-left{color:#fff;}
+  .ab-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.7;margin-bottom:4px;}
+  .ab-main{font-size:20px;font-weight:800;letter-spacing:-.01em;}
+  .ab-sub{font-size:12px;opacity:.7;margin-top:3px;}
+  .ab-right{text-align:right;}
+  .ab-progress-label{font-size:11px;color:rgba(255,255,255,.65);margin-bottom:6px;text-align:right;}
+  .progress-track{width:160px;height:8px;background:rgba(255,255,255,.2);border-radius:20px;overflow:hidden;}
+  .progress-fill{height:100%;background:#FAA334;border-radius:20px;}
+  .ab-pct{font-size:11px;color:rgba(255,255,255,.65);margin-top:4px;text-align:right;}
+  .no-active{max-width:900px;margin:0 auto 20px;padding:12px 20px;background:var(--surface);border-radius:12px;font-size:13px;color:var(--muted);text-align:center;border:1px solid var(--border);}
+
+  .today-strip{text-align:center;font-size:12px;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:#FAA334;animation:pulse 2s ease-in-out infinite;flex-shrink:0;}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(1.35)}}
+
+  /* LEGEND */
+  .legend-wrap{max-width:900px;margin:0 auto 20px;background:var(--surface);border-radius:12px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,51,161,.06);}
+  .leg-section{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;}
+  .leg-divider{width:1px;height:20px;background:var(--border);}
+  .leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-weight:500;}
+  .leg-dot{width:13px;height:13px;border-radius:3px;flex-shrink:0;}
+  .leg-dot.asueto{background:#e53935;}
+  .leg-dot.rdc{background:#2e7d32;}
+  .leg-dot.today{background:transparent;border:2.5px solid #FAA334;}
+
+  /* CALENDAR */
+  .cal-wrap{max-width:900px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media(max-width:700px){.cal-wrap{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:380px){.cal-wrap{grid-template-columns:1fr;}}
+  .month-card{background:var(--surface);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,51,161,.07),0 3px 10px rgba(0,51,161,.05);}
+  .month-header{padding:8px 12px 6px;background:var(--navy);color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+  .dow-row{display:grid;grid-template-columns:repeat(7,1fr);padding:4px 3px 2px;background:#f5f7fb;border-bottom:1px solid var(--border);}
+  .dow{text-align:center;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;}
+  .day-grid{display:grid;grid-template-columns:repeat(7,1fr);padding:3px;gap:1px;}
+
+  .day{
+    aspect-ratio:1;border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:9.5px;font-weight:500;
+    position:relative;cursor:default;
+  }
+  .day.empty{background:transparent;}
+  .day.weekend{background:#f0f2f8;color:#ccc;}
+  .day.has-cycle{color:#fff;}
+  .day.today-cell{outline:2.5px solid #FAA334;outline-offset:-2px;font-weight:800;z-index:2;}
+
+  /* cycle-start mini label */
+  .day.cycle-start::before{
+    content:attr(data-cnum);
+    position:absolute;top:1px;left:2px;
+    font-size:6px;font-weight:800;opacity:.9;line-height:1;
+  }
+  /* today day-in-cycle counter */
+  .day.today-cell.has-cycle::after{
+    content:attr(data-cycday);
+    position:absolute;bottom:1px;right:2px;
+    font-size:6px;font-weight:800;line-height:1;color:rgba(255,255,255,.9);
+  }
+
+  /* ASUETO — red stripe at bottom */
+  .day.asueto{position:relative;}
+  .day.asueto::after{
+    content:'';
+    position:absolute;bottom:0;left:0;right:0;
+    height:3px;background:#e53935;border-radius:0 0 3px 3px;
+    z-index:3;
+  }
+  /* If it's also a today cell, the cycday label takes ::after — so we need a different approach */
+  /* We'll use a box-shadow inset for asueto when also today */
+  .day.asueto.today-cell{box-shadow:inset 0 -3px 0 #e53935;}
+  .day.asueto.today-cell::after{content:attr(data-cycday);position:absolute;bottom:1px;right:2px;font-size:6px;font-weight:800;line-height:1;color:rgba(255,255,255,.9);background:transparent;height:auto;left:auto;border-radius:0;}
+
+  /* RDC — green top stripe */
+  .day.rdc-day::before{
+    content:attr(data-cnum) !important;
+    display:none;
+  }
+  .day.rdc-day{position:relative;}
+  .day.rdc-day .rdc-bar{
+    position:absolute;top:0;left:0;right:0;
+    height:3px;background:#2e7d32;border-radius:3px 3px 0 0;
+    z-index:3;
+  }
+  /* cycle-start label uses ::before — on RDC days we add it via span instead */
+
+  /* TABLE */
+  .table-wrap{max-width:900px;margin:22px auto 0;background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,51,161,.07);}
+  .table-title{padding:13px 20px;font-size:13px;font-weight:700;color:var(--navy);border-bottom:1px solid var(--border);}
+  table{width:100%;border-collapse:collapse;}
+  th{text-align:left;padding:8px 14px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;background:#f8faff;border-bottom:1px solid var(--border);}
+  td{padding:9px 14px;font-size:12px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#f8faff;}
+  tr.active-row td{background:#e6f4ff;}
+  tr.past-row td{opacity:.35;}
+  .cycle-chip{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;color:#fff;}
+  .day-indicator{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--navy);font-weight:600;font-family:'Inter',sans-serif;background:#e6f4ff;padding:2px 8px;border-radius:20px;}
+  .progress-cell{display:flex;align-items:center;gap:6px;}
+  .mini-track{width:60px;height:5px;background:var(--border);border-radius:10px;overflow:hidden;}
+  .mini-fill{height:100%;background:#FAA334;border-radius:10px;}
+
+  /* ASUETOS TABLE */
+  .asueto-wrap{max-width:900px;margin:16px auto 0;display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:560px){.asueto-wrap{grid-template-columns:1fr;}}
+  .asueto-card{background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,51,161,.07);}
+  .asueto-header{padding:11px 16px;font-size:12px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;}
+  .asueto-header.red{background:#e53935;}
+  .asueto-header.green{background:#2e7d32;}
+  .asueto-row{display:flex;align-items:center;padding:7px 14px;border-bottom:1px solid var(--border);gap:10px;font-size:11px;}
+  .asueto-row:last-child{border-bottom:none;}
+  .asueto-date{font-family:'JetBrains Mono',monospace;color:var(--muted);white-space:nowrap;min-width:70px;}
+  .asueto-name{color:var(--text);font-weight:500;}
+  .asueto-chip{font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;color:#fff;white-space:nowrap;}
+  .asueto-chip.red{background:#e53935;}
+  .asueto-chip.green{background:#2e7d32;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-badge">Nutriben CA · 2026</div>
+  <h1>Ciclos de Campo</h1>
+  <p>Días hábiles · con asuetos y reuniones de ciclo (RDC)</p>
+</div>
+
+<div class="selector">
+  <button class="sel-btn active" onclick="setPais('HND',this)">
+    <span class="flag">🇭🇳</span> Honduras
+  </button>
+  <button class="sel-btn" onclick="setPais('SAL',this)">
+    <span class="flag">🇸🇻</span> El Salvador
+  </button>
+</div>
+
+<div id="active-banner"></div>
+
+<div class="today-strip">
+  <span class="dot"></span>
+  <span id="today-label"></span>
+</div>
+
+<div class="legend-wrap">
+  <div class="leg-section" id="cycle-legend"></div>
+  <div class="leg-divider"></div>
+  <div class="leg-section">
+    <div class="leg-item"><div class="leg-dot asueto"></div>Asueto nacional</div>
+    <div class="leg-item"><div class="leg-dot rdc"></div>Reunión de ciclo (RDC)</div>
+    <div class="leg-item"><div class="leg-dot today"></div>Hoy</div>
+  </div>
+</div>
+
+<div class="cal-wrap" id="cal-wrap"></div>
+
+<div class="table-wrap">
+  <div class="table-title" id="table-title"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Ciclo</th><th>Inicio</th><th>Fin</th>
+        <th>Hábiles</th><th>Asuetos</th><th>RDC</th><th>Efectivos</th>
+        <th>Avance</th><th></th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+<div class="asueto-wrap" id="asueto-wrap"></div>
+
+<script>
+var CICLOS = {
+  HND:[
+    {c:1, ini:'2026-01-12',fin:'2026-02-13'},
+    {c:2, ini:'2026-02-16',fin:'2026-03-20'},
+    {c:3, ini:'2026-03-24',fin:'2026-04-30'},
+    {c:4, ini:'2026-05-04',fin:'2026-06-05'},
+    {c:5, ini:'2026-06-09',fin:'2026-07-13'},
+    {c:6, ini:'2026-07-14',fin:'2026-08-17'},
+    {c:7, ini:'2026-08-19',fin:'2026-09-23'},
+    {c:8, ini:'2026-09-24',fin:'2026-10-30'},
+    {c:9, ini:'2026-11-03',fin:'2026-12-07'},
+    {c:10,ini:'2026-12-08',fin:'2026-12-17'}
+  ],
+  SAL:[
+    {c:1, ini:'2026-01-12',fin:'2026-02-13'},
+    {c:2, ini:'2026-02-16',fin:'2026-03-20'},
+    {c:3, ini:'2026-03-24',fin:'2026-04-29'},
+    {c:4, ini:'2026-04-30',fin:'2026-06-04'},
+    {c:5, ini:'2026-06-08',fin:'2026-07-13'},
+    {c:6, ini:'2026-07-14',fin:'2026-08-20'},
+    {c:7, ini:'2026-08-24',fin:'2026-09-28'},
+    {c:8, ini:'2026-09-29',fin:'2026-11-03'},
+    {c:9, ini:'2026-11-05',fin:'2026-12-09'},
+    {c:10,ini:'2026-12-10',fin:'2026-12-17'}
+  ]
+};
+
+var ASUETOS = {
+  HND:{
+    '2026-01-01':'Año Nuevo',
+    '2026-04-02':'Jueves Santo',
+    '2026-04-03':'Viernes Santo',
+    '2026-04-04':'Sábado Santo',
+    '2026-04-14':'Día de las Américas',
+    '2026-05-01':'Día del Trabajo',
+    '2026-09-15':'Independencia de Honduras',
+    '2026-10-03':'Día del Soldado',
+    '2026-10-12':'Día de la Raza',
+    '2026-10-21':'Día de las Fuerzas Armadas',
+    '2026-12-25':'Navidad'
+  },
+  SAL:{
+    '2026-01-01':'Año Nuevo',
+    '2026-04-02':'Jueves Santo',
+    '2026-04-03':'Viernes Santo',
+    '2026-04-04':'Sábado Santo',
+    '2026-05-01':'Día del Trabajo',
+    '2026-05-10':'Día de la Madre',
+    '2026-06-17':'Día del Padre',
+    '2026-08-03':'Fiestas de San Salvador',
+    '2026-08-05':'Fiestas de San Salvador',
+    '2026-08-06':'Divino Salvador del Mundo',
+    '2026-09-15':'Independencia Nacional',
+    '2026-11-02':'Día de los Difuntos',
+    '2026-12-25':'Navidad'
+  }
+};
+
+var RDC = {
+  HND:{
+    '2026-01-08':'RDC C1',
+    '2026-01-09':'RDC C1',
+    '2026-03-23':'RDC C3',
+    '2026-06-08':'RDC C5',
+    '2026-08-18':'RDC C7',
+    '2026-11-02':'RDC C9'
+  },
+  SAL:{
+    '2026-01-08':'RDC C1',
+    '2026-01-09':'RDC C1',
+    '2026-03-23':'RDC C3',
+    '2026-06-05':'RDC C5',
+    '2026-08-21':'RDC C7',
+    '2026-11-04':'RDC C9'
+  }
+};
+
+var COLORS=['#3F58A7','#0033A1','#00A0DF','#6C8CC7','#7EC7BD','#c47f15','#7B78C0','#c47fa8','#4da8d6','#5a9ec2'];
+var MESES_FULL=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var MESES_SHORT=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var DOW_MON=['Lu','Ma','Mi','Ju','Vi','Sa','Do'];
+var DIAS_ES=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+var paisActual='HND';
+
+function pad(n){return n<10?'0'+n:''+n;}
+
+function parseDate(str){
+  var p=str.split('-');
+  return new Date(+p[0],+p[1]-1,+p[2]);
+}
+
+function getToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+
+function diasHabiles(ini,fin,asuetos,rdc){
+  var d=parseDate(ini), end=parseDate(fin), count=0;
+  while(d<=end){
+    var str=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    var dow=d.getDay();
+    if(dow!==0&&dow!==6) count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+
+function countSpecial(ini,fin,map){
+  var d=parseDate(ini), end=parseDate(fin), count=0;
+  while(d<=end){
+    var str=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    var dow=d.getDay();
+    if(dow!==0&&dow!==6&&map[str]) count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+
+function diaEnCiclo(ini,hoy){
+  var d=parseDate(ini), end=parseDate(hoy), count=0;
+  while(d<=end){
+    var dow=d.getDay();
+    if(dow!==0&&dow!==6) count++;
+    d.setDate(d.getDate()+1);
+  }
+  return count;
+}
+
+function getCic(ciclos,str){
+  for(var i=0;i<ciclos.length;i++) if(str>=ciclos[i].ini&&str<=ciclos[i].fin) return {cic:ciclos[i],idx:i};
+  return null;
+}
+
+function isStart(ciclos,str){
+  for(var i=0;i<ciclos.length;i++) if(ciclos[i].ini===str) return ciclos[i];
+  return null;
+}
+
+function fmt(str){
+  var p=str.split('-');
+  return +p[2]+' '+MESES_SHORT[+p[1]-1];
+}
+
+function buildActiveBanner(ciclos,hoy,asuetos,rdc){
+  var el=document.getElementById('active-banner');
+  var found=null,foundIdx=0;
+  for(var i=0;i<ciclos.length;i++){
+    if(hoy>=ciclos[i].ini&&hoy<=ciclos[i].fin){found=ciclos[i];foundIdx=i;break;}
+  }
+  if(!found){el.innerHTML='<div class="no-active">No hay ciclo activo hoy</div>';return;}
+  var total=diasHabiles(found.ini,found.fin);
+  var diaActual=diaEnCiclo(found.ini,hoy);
+  var nAsuetos=countSpecial(found.ini,found.fin,asuetos);
+  var nRdc=countSpecial(found.ini,found.fin,rdc);
+  var efectivos=total-nAsuetos-nRdc;
+  var pct=Math.round(diaActual/total*100);
+  el.innerHTML='<div class="active-banner">'
+    +'<div class="ab-left">'
+      +'<div class="ab-title">Ciclo activo</div>'
+      +'<div class="ab-main">Ciclo '+found.c+' &nbsp;·&nbsp; Día <span style="color:#FAA334">'+diaActual+'</span> de '+total+'</div>'
+      +'<div class="ab-sub">'+fmt(found.ini)+' → '+fmt(found.fin)+'&nbsp;·&nbsp;'+efectivos+' días efectivos ('+nAsuetos+' asuetos · '+nRdc+' RDC)</div>'
+    +'</div>'
+    +'<div class="ab-right">'
+      +'<div class="ab-progress-label">Avance del ciclo</div>'
+      +'<div class="progress-track"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
+      +'<div class="ab-pct">'+diaActual+' / '+total+' días hábiles ('+pct+'%)</div>'
+    +'</div>'
+  +'</div>';
+}
+
+function buildCycleLegend(ciclos){
+  var el=document.getElementById('cycle-legend'),h='';
+  for(var i=0;i<ciclos.length;i++)
+    h+='<div class="leg-item"><div class="leg-dot" style="background:'+COLORS[i]+';border-radius:3px;"></div>C'+ciclos[i].c+'</div>';
+  el.innerHTML=h;
+}
+
+function buildCalendar(ciclos,hoy,asuetos,rdc){
+  var wrap=document.getElementById('cal-wrap'),h='';
+  for(var m=0;m<12;m++){
+    h+='<div class="month-card"><div class="month-header">'+MESES_FULL[m]+'</div>';
+    h+='<div class="dow-row">';
+    for(var d=0;d<7;d++) h+='<div class="dow">'+DOW_MON[d]+'</div>';
+    h+='</div><div class="day-grid">';
+    var first=new Date(2026,m,1);
+    var startDow=(first.getDay()+6)%7;
+    var daysInMonth=new Date(2026,m+1,0).getDate();
+    for(var e=0;e<startDow;e++) h+='<div class="day empty"></div>';
+    for(var day=1;day<=daysInMonth;day++){
+      var str='2026-'+pad(m+1)+'-'+pad(day);
+      var dow=parseDate(str).getDay();
+      var isWE=(dow===0||dow===6);
+      var res=getCic(ciclos,str);
+      var cic=res?res.cic:null;
+      var idx=res?res.idx:-1;
+      var sc=isStart(ciclos,str);
+      var isTod=str===hoy;
+      var isAsueto=!!asuetos[str];
+      var isRdc=!!rdc[str];
+
+      var bg=isWE?'#f0f2f8':(cic?COLORS[idx]:'#eef1f7');
+      var tc=isWE?'#ccc':(cic?'#fff':'#bcc5d8');
+
+      var cls='day';
+      if(!isWE&&cic) cls+=' has-cycle';
+      if(isWE) cls+=' weekend';
+      if(!isWE&&sc) cls+=' cycle-start';
+      if(isTod) cls+=' today-cell';
+      if(!isWE&&isAsueto) cls+=' asueto';
+      if(!isWE&&isRdc) cls+=' rdc-day';
+
+      var cnumAttr=sc?' data-cnum="C'+sc.c+'"':'';
+      var cycDayAttr='';
+      if(isTod&&cic&&!isWE){
+        var dAct=diaEnCiclo(cic.ini,hoy);
+        cycDayAttr=' data-cycday="'+dAct+'"';
+      }
+
+      var titleParts=[str];
+      if(cic&&!isWE) titleParts.push('Ciclo '+cic.c);
+      if(isAsueto) titleParts.push(asuetos[str]);
+      if(isRdc) titleParts.push(rdc[str]);
+
+      // RDC green bar (top), asueto red bar (bottom via CSS)
+      var inner=day+'';
+      if(!isWE&&isRdc) inner='<span class="rdc-bar"></span>'+day;
+
+      h+='<div class="'+cls+'" style="background:'+bg+';color:'+tc+'"'+cnumAttr+cycDayAttr+' title="'+titleParts.join(' · ')+'">'+inner+'</div>';
+    }
+    h+='</div></div>';
+  }
+  wrap.innerHTML=h;
+}
+
+function buildTable(ciclos,pais,hoy,asuetos,rdc){
+  var flag=pais==='HND'?'🇭🇳':'🇸🇻';
+  var name=pais==='HND'?'Honduras':'El Salvador';
+  document.getElementById('table-title').textContent=flag+' '+name+' — ciclos 2026 · días efectivos';
+  var h='';
+  for(var i=0;i<ciclos.length;i++){
+    var c=ciclos[i];
+    var total=diasHabiles(c.ini,c.fin);
+    var nAs=countSpecial(c.ini,c.fin,asuetos);
+    var nRd=countSpecial(c.ini,c.fin,rdc);
+    var efectivos=total-nAs-nRd;
+    var isPast=hoy>c.fin;
+    var isActive=hoy>=c.ini&&hoy<=c.fin;
+    var rowCls=isPast?'past-row':(isActive?'active-row':'');
+    var diaAct=isActive?diaEnCiclo(c.ini,hoy):0;
+    var pct=isActive?Math.round(diaAct/total*100):(isPast?100:0);
+    var badge=isActive?'<span class="day-indicator">Día '+diaAct+' / '+total+'</span>':'';
+    var progCell='<div class="progress-cell"><div class="mini-track"><div class="mini-fill" style="width:'+pct+'%"></div></div>'+(isActive||isPast?'<span style="font-size:10px;color:var(--muted);font-family:Inter,sans-serif">'+pct+'%</span>':'')+'</div>';
+    h+='<tr class="'+rowCls+'"><td><span class="cycle-chip" style="background:'+COLORS[i]+'">C'+c.c+'</span></td>'
+      +'<td>'+fmt(c.ini)+'</td><td>'+fmt(c.fin)+'</td>'
+      +'<td>'+total+'</td>'
+      +'<td>'+(nAs>0?'<span style="color:#e53935;font-weight:700">'+nAs+'</span>':'–')+'</td>'
+      +'<td>'+(nRd>0?'<span style="color:#2e7d32;font-weight:700">'+nRd+'</span>':'–')+'</td>'
+      +'<td style="font-weight:700;color:var(--navy)">'+efectivos+'</td>'
+      +'<td>'+progCell+'</td>'
+      +'<td>'+badge+'</td></tr>';
+  }
+  document.getElementById('table-body').innerHTML=h;
+}
+
+function buildAsuetosPanel(pais,asuetos,rdc){
+  var flag=pais==='HND'?'🇭🇳':'🇸🇻';
+  var name=pais==='HND'?'Honduras':'El Salvador';
+  var wrap=document.getElementById('asueto-wrap');
+
+  // Asuetos card
+  var hA='<div class="asueto-card"><div class="asueto-header red">🔴 Asuetos '+flag+' '+name+'</div>';
+  var entries=Object.keys(asuetos).sort();
+  for(var i=0;i<entries.length;i++){
+    var str=entries[i];
+    var dow=parseDate(str).getDay();
+    var dowStr=['Do','Lu','Ma','Mi','Ju','Vi','Sa'][dow];
+    var p=str.split('-');
+    hA+='<div class="asueto-row">'
+      +'<span class="asueto-date">'+parseInt(p[2])+' '+['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(p[1])-1]+'</span>'
+      +'<span style="font-size:10px;color:var(--muted);min-width:18px">'+dowStr+'</span>'
+      +'<span class="asueto-name">'+asuetos[str]+'</span>'
+      +'</div>';
+  }
+  hA+='</div>';
+
+  // RDC card
+  var hR='<div class="asueto-card"><div class="asueto-header green">🟢 Reuniones de Ciclo (RDC) '+flag+'</div>';
+  var rdcEntries=Object.keys(rdc).sort();
+  for(var j=0;j<rdcEntries.length;j++){
+    var str2=rdcEntries[j];
+    var dow2=parseDate(str2).getDay();
+    var dowStr2=['Do','Lu','Ma','Mi','Ju','Vi','Sa'][dow2];
+    var p2=str2.split('-');
+    hR+='<div class="asueto-row">'
+      +'<span class="asueto-date">'+parseInt(p2[2])+' '+['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(p2[1])-1]+'</span>'
+      +'<span style="font-size:10px;color:var(--muted);min-width:18px">'+dowStr2+'</span>'
+      +'<span class="asueto-name">'+rdc[str2]+'</span>'
+      +'</div>';
+  }
+  hR+='</div>';
+
+  wrap.innerHTML=hA+hR;
+}
+
+function setTodayLabel(hoy){
+  var d=new Date(hoy+'T12:00:00');
+  document.getElementById('today-label').textContent=
+    'Hoy · '+DIAS_ES[d.getDay()]+' '+d.getDate()+' de '+MESES_SHORT[d.getMonth()]+' 2026';
+}
+
+function setPais(pais,btn){
+  paisActual=pais;
+  document.querySelectorAll('.sel-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  render();
+}
+
+function render(){
+  var hoy=getToday();
+  var ciclos=CICLOS[paisActual];
+  var asuetos=ASUETOS[paisActual];
+  var rdc=RDC[paisActual];
+  setTodayLabel(hoy);
+  buildActiveBanner(ciclos,hoy,asuetos,rdc);
+  buildCycleLegend(ciclos);
+  buildCalendar(ciclos,hoy,asuetos,rdc);
+  buildTable(ciclos,paisActual,hoy,asuetos,rdc);
+  buildAsuetosPanel(paisActual,asuetos,rdc);
+}
+
+render();
+</script>
+</body>
+</html>
