@@ -234,6 +234,22 @@
   .note.warn{background:#fff4e3;color:#7a4b00;}
   .note.err{background:#fde7e7;color:#a11;}
   .note:empty{display:none;}
+  .seg{display:flex;background:#eef1f7;border-radius:9px;padding:3px;gap:3px;}
+  .seg button{flex:1;border:0;background:transparent;padding:8px 6px;border-radius:7px;font-family:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;}
+  .seg button.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+  .dgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;}
+  .dgrid .dw{font-size:10.5px;text-align:center;color:var(--muted);font-weight:700;text-transform:uppercase;}
+  .dchip{border:1.5px solid var(--border);background:#fff;border-radius:7px;padding:5px 0 7px;text-align:center;font-size:14px;font-weight:700;color:var(--text);cursor:pointer;line-height:1.1;font-family:inherit;position:relative;}
+  .dchip small{display:block;font-size:9.5px;color:var(--muted);font-weight:600;}
+  .dchip.asu{background:#fdecec;}
+  .dchip.rdc{background:#e8f5e9;}
+  .dchip.gvm::after{content:'';position:absolute;left:7px;right:7px;bottom:2px;height:3px;border-radius:2px;background:var(--navy);}
+  .dchip.on{background:#2a9d8f;border-color:#2a9d8f;color:#fff;}
+  .dchip.on small{color:#e0f5f2;}
+  .dchip.on.gvm::after{background:#fff;}
+  .dchip:disabled{opacity:.35;cursor:not-allowed;}
+  .dhint{font-size:11.5px;color:var(--muted);margin-top:6px;}
+  .bar .acomp{cursor:pointer;}
   .plan-wrap.full{position:fixed;inset:0;max-width:none;margin:0;border-radius:0;z-index:40;overflow:auto;}
   body.plan-full{overflow:hidden;}
   .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;font-size:13px;padding:10px 18px;border-radius:24px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;}
@@ -305,7 +321,7 @@
     <div>
       <div class="plan-kicker">Planificación de campo</div>
       <h2>Giras y salidas a campo</h2>
-      <div class="plan-sub" id="plan-sub">Cada VM registra sus giras al inicio del ciclo · el Jefe de Visitadores planifica sus salidas con el equipo</div>
+      <div class="plan-sub" id="plan-sub">Cada VM registra sus giras al inicio del ciclo · el Jefe de Visitadores elige qué giras acompaña y marca sus visitas acompañadas</div>
     </div>
     <div class="plan-user" id="plan-user"></div>
   </div>
@@ -334,8 +350,11 @@
   <form class="modal" onsubmit="guardarGira(event)">
     <div class="modal-h"><h3 id="gm-title"></h3><p id="gm-sub"></p></div>
     <div class="modal-b">
+      <div class="seg" id="gm-tipo-wrap"><button type="button" data-t="campo" onclick="cambiarTipo('campo')">Visita acompañada</button><button type="button" data-t="gira" onclick="cambiarTipo('gira')">Gira propia</button></div>
       <div class="fld" id="gm-vm-wrap"><label for="gm-vm">Acompaña a</label><select id="gm-vm" onchange="alElegirVM()"></select></div>
-      <div class="row2">
+      <div class="fld" id="gm-gvm-wrap"><label for="gm-gvm">Gira del visitador</label><select id="gm-gvm" onchange="alElegirGiraVM()"></select></div>
+      <div class="fld" id="gm-dias-wrap"><label>Días acompañados <span id="gm-dias-n" style="text-transform:none;letter-spacing:0"></span></label><div class="dgrid" id="gm-dias"></div><div class="dhint">Toca los días que saldrás con el VM; pueden ser salteados. La raya azul marca los días de gira del VM.</div></div>
+      <div class="row2" id="gm-rango">
         <div class="fld"><label for="gm-ini">Desde</label><input id="gm-ini" type="date" required oninput="validarForm()"></div>
         <div class="fld"><label for="gm-fin">Hasta</label><input id="gm-fin" type="date" required oninput="validarForm()"></div>
       </div>
@@ -347,6 +366,7 @@
     </div>
     <div class="modal-f">
       <button type="button" class="btn btn-d" id="gm-del" onclick="eliminarGira()">Eliminar</button>
+      <button type="button" class="btn btn-s" id="gm-acomp" onclick="acompanarEstaGira()" style="color:#1f7a6f;border-color:#a9dcd5">＋ Acompañar esta gira</button>
       <span class="sp"></span>
       <button type="button" class="btn btn-s" onclick="cerrar('g-modal')">Cancelar</button>
       <button type="submit" class="btn btn-p" id="gm-save">Guardar</button>
@@ -833,11 +853,11 @@ function renderPlan(){
   if(!fl.vms.length)h+='<tr class="sep"><td class="who" colspan="'+(dias.length+1)+'">Sin visitadores activos en este país</td></tr>';
   fl.vms.forEach(function(p){h+=filaHTML(p,pais,c,dias,regs,pf,false);});
   if(fl.jefes.length){
-    h+='<tr class="sep"><td class="who">Jefatura · salidas a campo</td><td colspan="'+dias.length+'"></td></tr>';
+    h+='<tr class="sep"><td class="who">Jefatura · giras y visitas acompañadas</td><td colspan="'+dias.length+'"></td></tr>';
     fl.jefes.forEach(function(p){h+=filaHTML(p,pais,c,dias,regs,pf,true);});
   }
   h+='</tbody></table></div>';
-  h+='<div class="plan-legend"><span><i class="lg-sw" style="background:var(--navy)"></i>Gira del VM</span><span><i class="lg-sw" style="background:#2a9d8f"></i>Salida a campo del Jefe</span><span><i class="acomp">RF</i>VM acompañado ese día</span>'
+  h+='<div class="plan-legend"><span><i class="lg-sw" style="background:var(--navy)"></i>Gira (VM o Jefe)</span><span><i class="lg-sw" style="background:#2a9d8f"></i>Visita acompañada del Jefe</span><span><i class="acomp">RF</i>Visita acompañada ese día</span>'
     +'<span><i class="lg-sw" style="background:repeating-linear-gradient(135deg,#fdecec 0 3px,#fff 3px 6px)"></i>Asueto</span><span><i class="lg-sw" style="background:repeating-linear-gradient(135deg,#e8f5e9 0 3px,#fff 3px 6px)"></i>RDC</span>'
     +(LECTORES_FUEL.indexOf(YO.role)!==-1?'<span><i class="lg-sw" style="background:#FAA334;width:8px;height:8px;border-radius:50%"></i>Gira en plan semanal de combustible sin registrar aquí</span><span><i class="lg-sw" style="outline:2px dashed #FAA334;background:#fff"></i>Gira registrada que el plan semanal no confirma</span>':'')
     +'</div>';
@@ -847,13 +867,28 @@ function renderPlan(){
 
 function filaHTML(p,pais,c,dias,regs,pf,esJefe){
   var mios=regs.filter(function(g){return g.user_id===p.id&&g.tipo!=='sin_gira';});
+  var misGiras=mios.filter(function(g){return g.tipo==='gira';}),misCampo=mios.filter(function(g){return g.tipo==='campo';});
   var sinGira=regs.filter(function(g){return g.user_id===p.id&&g.tipo==='sin_gira';})[0];
-  var acomp=esJefe?[]:regs.filter(function(g){return g.tipo==='campo'&&g.visitador_id===p.id;});
-  var jefeIni=function(id){return iniciales((persona(id)||{}).full_name||'');};
+  // VM: visitas acompañadas que recibe · Jefe: sus visitas acompañadas (se muestran dentro de su gira)
+  var acomp=esJefe?misCampo:regs.filter(function(g){return g.tipo==='campo'&&g.visitador_id===p.id;});
   var edit=puedeEditarFila(p),hoy=getToday(),fuel=FUEL[p.id]||{};
+  var badgeHTML=function(lista){
+    var vistos={},h='';
+    lista.forEach(function(a){
+      var quien=persona(esJefe?a.visitador_id:a.user_id),k=quien?quien.id:'';
+      if(vistos[k])return;vistos[k]=1;
+      var puede=!!(YO&&(YO.id===a.user_id||esEditor()));
+      h+='<span class="acomp" title="Visita acompañada '+(esJefe?'a ':'con ')+esc((quien||{}).full_name||'')+(a.destino?' · '+esc(a.destino):'')+(puede?' · tocar para editar':'')+'"'+(puede?' onclick="event.stopPropagation();abrirEditar(\''+a.id+'\')"':'')+'>'+esc(iniciales((quien||{}).full_name||''))+'</span>';
+    });
+    return h;
+  };
   // estado
   var st='';
-  if(esJefe){var nd=0;mios.forEach(function(g){nd+=diasHabilesRango(g.fecha_ini,g.fecha_fin,pais);});st=mios.length?'<span class="st ok">'+mios.length+' salida'+(mios.length>1?'s':'')+' · '+nd+' d</span>':'<span class="st none">Sin salidas</span>';}
+  if(esJefe){
+    var nd=0;misCampo.forEach(function(g){nd+=diasHabilesRango(g.fecha_ini,g.fecha_fin,pais);});
+    var pt=[];if(misGiras.length)pt.push(misGiras.length+' gira'+(misGiras.length>1?'s':''));if(misCampo.length)pt.push(nd+' d acompañado'+(nd!==1?'s':''));
+    st=pt.length?'<span class="st ok">'+pt.join(' · ')+'</span>':'<span class="st none">Sin planificar</span>';
+  }
   else if(sinGira)st='<span class="st ok">Sin gira este ciclo</span>';
   else if(mios.length){
     var nd2=0,tarde=false;mios.forEach(function(g){nd2+=diasHabilesRango(g.fecha_ini,g.fecha_fin,pais);if(g.created_at.slice(0,10)>pf)tarde=true;});
@@ -864,33 +899,35 @@ function filaHTML(p,pais,c,dias,regs,pf,esJefe){
   var h='<tr'+(esJefe?' class="jefe"':'')+'><td class="who"><div class="who-name" title="'+esc(p.full_name)+'">'+esc(nombreCorto(p))+(YO.id===p.id?' <span style="color:var(--sky)">(tú)</span>':'')+'</div><div class="who-meta">'+(p.fuel_sede?esc(p.fuel_sede)+' · ':'')+st+extra+'</div></td>';
   for(var i=0;i<dias.length;i++){
     var d=dias[i],g=null;
-    for(var k=0;k<mios.length;k++)if(cubre(mios[k],d)){g=mios[k];break;}
+    // en la fila del Jefe la gira manda; sus visitas acompañadas van como insignias dentro
+    for(var k=0;k<mios.length;k++)if(cubre(mios[k],d)&&(!esJefe||mios[k].tipo==='gira')){g=mios[k];break;}
+    if(!g&&esJefe)for(var k2=0;k2<misCampo.length;k2++)if(cubre(misCampo[k2],d)){g=misCampo[k2];break;}
     var wk=(parseDate(d).getDay()===1&&i>0)?' wk':'';
     var bgc=(ASUETOS[pais][d]?' asu':'')+(RDC[pais][d]?' rdc':'');
+    var enGiraJefe=function(x){return misGiras.some(function(o){return cubre(o,x);});};
     if(g){
-      var span=1;while(i+span<dias.length&&cubre(g,dias[i+span]))span++;
+      var span=1;while(i+span<dias.length&&cubre(g,dias[i+span])&&!(esJefe&&g.tipo==='campo'&&enGiraJefe(dias[i+span])))span++;
       var tramo=dias.slice(i,i+span);
-      var conJefe=acomp.filter(function(a){return tramo.some(function(x){return cubre(a,x);});});
+      var dentro=(esJefe&&g.tipo==='campo')?[]:acomp.filter(function(a){return tramo.some(function(x){return cubre(a,x);});});
       var mism=false;
       if(!esJefe){var conDato=tramo.filter(function(x){return fuel[x];});mism=conDato.length>0&&!conDato.some(function(x){return fuel[x]==='gira';});}
       var lbl=g.tipo==='campo'?('con '+((persona(g.visitador_id)||{full_name:'—'}).full_name.split(/\s+/)[0])+(g.destino?' · '+g.destino:'')):(g.destino||'Gira');
       var tip=fmtL(g.fecha_ini)+' → '+fmtL(g.fecha_fin)+' · '+lbl+(g.notas?' · '+g.notas:'')+(mism?' · El plan semanal de combustible no marca gira en estos días':'');
-      var badges=conJefe.map(function(a){return '<span class="acomp" title="Salida a campo con '+esc((persona(a.user_id)||{}).full_name||'')+'">'+esc(jefeIni(a.user_id))+'</span>';}).join('');
-      h+='<td class="c'+wk+'" colspan="'+span+'"><div class="bar '+g.tipo+(edit?'':' ro')+(mism?' mismatch':'')+'" title="'+esc(tip)+'"'+(edit?' onclick="abrirEditar(\''+g.id+'\')"':'')+'>'+badges+'<span class="tx">'+esc(lbl)+'</span></div></td>';
+      h+='<td class="c'+wk+'" colspan="'+span+'"><div class="bar '+g.tipo+(edit?'':' ro')+(mism?' mismatch':'')+'" title="'+esc(tip)+'"'+(edit?' onclick="abrirEditar(\''+g.id+'\')"':'')+'>'+badgeHTML(dentro)+'<span class="tx">'+esc(lbl)+'</span></div></td>';
       i+=span-1;continue;
     }
-    var badge='',jf=acomp.filter(function(a){return cubre(a,d);})[0];
-    if(jf)badge='<div class="cell-badge"><span class="acomp" title="Salida a campo con '+esc((persona(jf.user_id)||{}).full_name||'')+(jf.destino?' · '+esc(jf.destino):'')+'">'+esc(jefeIni(jf.user_id))+'</span></div>';
+    var badge='',jf=esJefe?[]:acomp.filter(function(a){return cubre(a,d);});
+    if(jf.length)badge='<div class="cell-badge">'+badgeHTML(jf)+'</div>';
     var dot=(!esJefe&&fuel[d]==='gira')?'<span class="fuel-dot" title="Plan semanal de combustible: gira"></span>':'';
     var canClick=edit&&!(sinGira&&!esJefe);
-    h+='<td class="c'+wk+bgc+(canClick?' edit':'')+'"'+(canClick?' onclick="abrirNueva(\''+p.id+'\',\''+d+'\')" title="'+esc(fmtL(d))+' · tocar para '+(esJefe?'planificar salida':'registrar gira')+'"':'')+'>'+badge+dot+'</td>';
+    h+='<td class="c'+wk+bgc+(canClick?' edit':'')+'"'+(canClick?' onclick="abrirNueva(\''+p.id+'\',\''+d+'\')" title="'+esc(fmtL(d))+' · tocar para '+(esJefe?'planificar visita acompañada o gira':'registrar gira')+'"':'')+'>'+badge+dot+'</td>';
   }
   return h+'</tr>';
 }
 
 function detalleHTML(pais,c,regs,pf){
   var items=regs.filter(function(g){return g.tipo!=='sin_gira';}).sort(function(a,b){return a.fecha_ini<b.fecha_ini?-1:a.fecha_ini>b.fecha_ini?1:0;});
-  if(!items.length)return '<div class="det"><h3>Detalle del ciclo</h3><div class="plan-empty" style="padding:14px 0">Aún no hay giras ni salidas registradas para el C'+c.c+'. Toca un día en tu fila para registrar la primera.</div></div>';
+  if(!items.length)return '<div class="det"><h3>Detalle del ciclo</h3><div class="plan-empty" style="padding:14px 0">Aún no hay giras ni visitas acompañadas registradas para el C'+c.c+'. Toca un día en tu fila para registrar la primera.</div></div>';
   var h='<div class="det"><h3>Detalle del ciclo · '+items.length+' registro'+(items.length>1?'s':'')+'</h3>';
   items.forEach(function(g){
     var p=persona(g.user_id),vm=g.visitador_id?persona(g.visitador_id):null;
@@ -898,10 +935,10 @@ function detalleHTML(pais,c,regs,pf){
     var flags=[];
     if(g.created_at.slice(0,10)>pf)flags.push('registrada tarde');
     if(g.ediciones>0&&g.updated_at.slice(0,10)>pf)flags.push('modificada '+fmt(g.updated_at.slice(0,10)));
-    var titulo=g.tipo==='campo'?('<b>'+esc(nombreCorto(p))+'</b> sale con <b>'+esc(nombreCorto(vm))+'</b>'+(g.destino?' · '+esc(g.destino):'')):('<b>'+esc(nombreCorto(p))+'</b> · '+esc(g.destino||'Gira'));
+    var titulo=g.tipo==='campo'?('<b>'+esc(nombreCorto(p))+'</b> acompaña a <b>'+esc(nombreCorto(vm))+'</b>'+(g.destino?' · '+esc(g.destino):'')):('<b>'+esc(nombreCorto(p))+'</b> · '+esc(g.destino||'Gira'));
     h+='<div class="det-row"><div class="det-date">'+fmt(g.fecha_ini)+(g.fecha_fin!==g.fecha_ini?'<br>→ '+fmt(g.fecha_fin):'')+'</div>'
       +'<div class="det-main">'+titulo+'<small>'+nd+' día'+(nd!==1?'s':'')+' hábil'+(nd!==1?'es':'')+(g.notas?' · '+esc(g.notas):'')+(flags.length?' · <span style="color:#c62828">'+flags.join(' · ')+'</span>':'')+'</small></div>'
-      +'<span class="det-tag" style="background:'+(g.tipo==='campo'?'#2a9d8f':'var(--navy)')+'">'+(g.tipo==='campo'?'Campo':'Gira')+'</span></div>';
+      +'<span class="det-tag" style="background:'+(g.tipo==='campo'?'#2a9d8f':'var(--navy)')+'">'+(g.tipo==='campo'?'Acompañada':'Gira')+'</span></div>';
   });
   return h+'</div>';
 }
@@ -910,70 +947,160 @@ function pantallaCompleta(){var on=$('plan').classList.toggle('full');document.b
 function elegirCiclo(n){CIC_SEL[paisActual]=n;renderPlan();}
 
 /* ── Formulario ── */
+var SEL_DIAS={};
+function esJefeId(pid){var p=persona(pid);return !!(p&&p.role==='gerente_distrito');}
 function abrirNueva(pid,fecha){
   var p=persona(pid);if(!p)return;
   var c=cicloPorNum(paisActual,CIC_SEL[paisActual]).c;
-  FORM={id:null,user_id:pid,tipo:p.role==='gerente_distrito'?'campo':'gira',pais:paisActual,ciclo:c.c,c:c};
+  FORM={id:null,user_id:pid,tipo:esJefeId(pid)?'campo':'gira',pais:paisActual,ciclo:c.c,c:c,nuevo:true};
   llenarForm({fecha_ini:fecha,fecha_fin:fecha,destino:'',notas:'',visitador_id:null});
 }
 function abrirEditar(id){
   var g=GIRAS.filter(function(x){return x.id===id;})[0];if(!g)return;
   var c=cicloPorNum(g.pais,g.ciclo).c;
-  FORM={id:g.id,user_id:g.user_id,tipo:g.tipo,pais:g.pais,ciclo:g.ciclo,c:c};
+  FORM={id:g.id,user_id:g.user_id,tipo:g.tipo,pais:g.pais,ciclo:g.ciclo,c:c,nuevo:false};
   llenarForm(g);
 }
+/* el Jefe elige la gira de un VM y la acompaña (toda o algunos días) */
+function acompanarEstaGira(){
+  var g=GIRAS.filter(function(x){return x.id===FORM.id;})[0];
+  if(!g||!YO||YO.role!=='gerente_distrito')return;
+  var c=FORM.c;
+  FORM={id:null,user_id:YO.id,tipo:'campo',pais:g.pais,ciclo:g.ciclo,c:c,nuevo:true};
+  llenarForm({fecha_ini:g.fecha_ini<c.ini?c.ini:g.fecha_ini,fecha_fin:g.fecha_fin>c.fin?c.fin:g.fecha_fin,destino:g.destino||'',notas:'',visitador_id:g.user_id,gira_vm:g.id});
+}
 function llenarForm(g){
-  var p=persona(FORM.user_id),c=FORM.c,campo=FORM.tipo==='campo';
-  $('gm-title').textContent=(FORM.id?'Editar ':'')+(campo?'Salida a campo':'Gira')+' · '+nombreCorto(p);
+  var c=FORM.c;
   $('gm-sub').textContent=(FORM.pais==='HND'?'🇭🇳 Honduras':'🇸🇻 El Salvador')+' · Ciclo '+c.c+' ('+fmt(c.ini)+' → '+fmt(c.fin)+')';
-  $('gm-vm-wrap').style.display=campo?'':'none';
-  if(campo){
-    var vms=filas(FORM.pais).vms;
-    $('gm-vm').innerHTML='<option value="">Elige al visitador…</option>'+vms.map(function(v){return '<option value="'+v.id+'"'+(v.id===g.visitador_id?' selected':'')+'>'+esc(v.full_name)+'</option>';}).join('');
-  }
+  $('gm-tipo-wrap').style.display=(FORM.nuevo&&esJefeId(FORM.user_id))?'':'none';
   ['gm-ini','gm-fin'].forEach(function(k){$(k).min=c.ini;$(k).max=c.fin;});
   $('gm-ini').value=g.fecha_ini;$('gm-fin').value=g.fecha_fin;
   $('gm-dest').value=g.destino||'';$('gm-notas').value=g.notas||'';
-  $('gm-dest').placeholder=campo?'Opcional · se toma de la gira del VM si coincide':'Ciudad o ruta (p. ej. Choluteca – San Lorenzo)';
   $('dl-lugares').innerHTML=LUGARES[FORM.pais].map(function(l){return '<option value="'+esc(l.name)+'">';}).join('');
+  var vms=filas(FORM.pais).vms;
+  $('gm-vm').innerHTML='<option value="">Elige al visitador…</option>'+vms.map(function(v){return '<option value="'+v.id+'"'+(v.id===g.visitador_id?' selected':'')+'>'+esc(v.full_name)+'</option>';}).join('');
+  FORM.giraVM=g.gira_vm||null;
+  SEL_DIAS={};diasRango(g.fecha_ini,g.fecha_fin).forEach(function(d){SEL_DIAS[d]=1;});
   $('gm-del').style.display=FORM.id?'':'none';
-  $('gm-err').textContent='';
-  validarForm();abrir('g-modal');
+  $('gm-acomp').style.display=(FORM.id&&FORM.tipo==='gira'&&YO&&YO.role==='gerente_distrito'&&FORM.user_id!==YO.id)?'':'none';
+  aplicarTipo();
+  abrir('g-modal');
 }
-function alElegirVM(){
-  // si el VM tiene gira en esas fechas, propone su destino
-  var vm=$('gm-vm').value,ini=$('gm-ini').value;
-  if(vm&&ini&&!$('gm-dest').value.trim()){
-    var g=GIRAS.filter(function(x){return x.user_id===vm&&x.tipo==='gira'&&x.pais===FORM.pais&&cubre(x,ini);})[0];
-    if(g)$('gm-dest').value=g.destino;
-  }
+function aplicarTipo(){
+  var campo=FORM.tipo==='campo',p=persona(FORM.user_id);
+  $('gm-title').textContent=(FORM.id?'Editar ':'')+(campo?'Visita acompañada':'Gira')+' · '+nombreCorto(p);
+  [].forEach.call($('gm-tipo-wrap').children,function(b){b.classList.toggle('on',b.getAttribute('data-t')===FORM.tipo);});
+  $('gm-vm-wrap').style.display=campo?'':'none';
+  $('gm-gvm-wrap').style.display=campo?'':'none';
+  $('gm-dias-wrap').style.display=campo?'':'none';
+  $('gm-rango').style.display=campo?'none':'';
+  $('gm-dest').placeholder=campo?'Opcional · se toma de la gira del VM':'Ciudad o ruta (p. ej. Choluteca – San Lorenzo)';
+  $('gm-notas').placeholder=campo?'Objetivo del acompañamiento, médicos clave…':'Médicos o instituciones clave, objetivo de la gira…';
+  if(campo){llenarGirasVM();pintarDias();}
+  $('gm-err').textContent='';
   validarForm();
 }
+function cambiarTipo(t){
+  if(FORM.tipo===t)return;
+  if(t==='gira'){var s=selOrden();if(s.length){$('gm-ini').value=s[0];$('gm-fin').value=s[s.length-1];}}
+  else{SEL_DIAS={};diasRango($('gm-ini').value,$('gm-fin').value).forEach(function(d){SEL_DIAS[d]=1;});}
+  FORM.tipo=t;aplicarTipo();
+}
+function selOrden(){return diasCiclo(FORM.c).filter(function(d){return SEL_DIAS[d];});}
+function diasRango(ini,fin){
+  if(!ini||!fin)return [];
+  var r=diasCiclo(FORM.c).filter(function(d){return d>=ini&&d<=fin;});
+  if(r.length>1){var sinAsu=r.filter(function(d){return !ASUETOS[FORM.pais][d];});if(sinAsu.length)r=sinAsu;}
+  return r;
+}
+function girasVM(vm){
+  return GIRAS.filter(function(x){return x.user_id===vm&&x.tipo==='gira'&&x.pais===FORM.pais&&x.ciclo===FORM.ciclo&&x.anio===ANIO;})
+    .sort(function(a,b){return a.fecha_ini<b.fecha_ini?-1:1;});
+}
+function llenarGirasVM(){
+  var vm=$('gm-vm').value,sel=$('gm-gvm');
+  if(!vm){sel.innerHTML='<option value="">Elige primero al visitador</option>';sel.disabled=true;return;}
+  var gs=girasVM(vm),cur=FORM.giraVM,s=selOrden();
+  if(!cur&&s.length)gs.forEach(function(g){if(s.every(function(d){return cubre(g,d);}))cur=g.id;});
+  sel.disabled=!gs.length;
+  sel.innerHTML=(gs.length?'<option value="">— Ninguna · días en su plaza o sueltos —</option>':'<option value="">Sin giras registradas en este ciclo</option>')
+    +gs.map(function(g){return '<option value="'+g.id+'"'+(g.id===cur?' selected':'')+'>'+esc((g.destino||'Gira')+' · '+fmt(g.fecha_ini)+(g.fecha_fin!==g.fecha_ini?' → '+fmt(g.fecha_fin):''))+'</option>';}).join('');
+}
+function alElegirVM(){FORM.giraVM=null;llenarGirasVM();pintarDias();validarForm();}
+function alElegirGiraVM(){
+  var id=$('gm-gvm').value;FORM.giraVM=id||null;
+  if(id){
+    var g=GIRAS.filter(function(x){return x.id===id;})[0];
+    if(g){
+      SEL_DIAS={};diasCiclo(FORM.c).forEach(function(d){if(cubre(g,d)&&!ASUETOS[FORM.pais][d])SEL_DIAS[d]=1;});
+      if(g.destino)$('gm-dest').value=g.destino;
+    }
+  }
+  pintarDias();validarForm();
+}
+function pintarDias(){
+  var c=FORM.c,pais=FORM.pais,dias=diasCiclo(c),vm=$('gm-vm').value,gv=vm?girasVM(vm):[];
+  // días en que el Jefe ya tiene otra visita acompañada
+  var ocup={};
+  GIRAS.forEach(function(g){if(g.user_id===FORM.user_id&&g.tipo==='campo'&&g.id!==FORM.id&&g.pais===pais)dias.forEach(function(d){if(cubre(g,d))ocup[d]=persona(g.visitador_id);});});
+  var h=['Lu','Ma','Mi','Ju','Vi'].map(function(w){return '<div class="dw">'+w+'</div>';}).join('');
+  var off=parseDate(dias[0]).getDay()-1;for(var i=0;i<off;i++)h+='<div></div>';
+  dias.forEach(function(d){
+    if(ocup[d])delete SEL_DIAS[d];
+    var cls='dchip'+(SEL_DIAS[d]?' on':'')+(ASUETOS[pais][d]?' asu':'')+(RDC[pais][d]?' rdc':'')+(gv.some(function(g){return cubre(g,d);})?' gvm':'');
+    var t=[fmtL(d)];if(ASUETOS[pais][d])t.push(ASUETOS[pais][d]);if(RDC[pais][d])t.push(RDC[pais][d]);if(ocup[d])t.push('Ya acompañas a '+nombreCorto(ocup[d]));
+    h+='<button type="button" class="'+cls+'"'+(ocup[d]?' disabled':'')+' title="'+esc(t.join(' · '))+'" onclick="toggleDia(\''+d+'\')">'+(+d.slice(8))+'<small>'+MESES_SHORT[+d.slice(5,7)-1]+'</small></button>';
+  });
+  $('gm-dias').innerHTML=h;
+  var n=selOrden().length;$('gm-dias-n').textContent=n?'· '+n+' seleccionado'+(n>1?'s':''):'';
+}
+function toggleDia(d){if(SEL_DIAS[d])delete SEL_DIAS[d];else SEL_DIAS[d]=1;pintarDias();validarForm();}
+/* agrupa días seleccionados en tramos de días hábiles consecutivos */
+function tramos(s){
+  var dias=diasCiclo(FORM.c),out=[],cur=null;
+  s.forEach(function(d){var i=dias.indexOf(d);if(cur&&i===cur.i+1){cur.fin=d;cur.i=i;}else{cur={ini:d,fin:d,i:i};out.push(cur);}});
+  return out;
+}
 function validarForm(){
-  var ini=$('gm-ini').value,fin=$('gm-fin').value,pais=FORM.pais,c=FORM.c,info=[],warn=[],err=[];
-  if(ini&&fin&&fin<ini)err.push('La fecha final es anterior a la inicial.');
-  if(ini&&(ini<c.ini||ini>c.fin)||fin&&(fin<c.ini||fin>c.fin))err.push('Las fechas deben estar dentro del ciclo '+c.c+' ('+fmt(c.ini)+' → '+fmt(c.fin)+').');
-  if(ini&&fin&&fin>=ini&&!err.length){
-    var nd=diasHabilesRango(ini,fin,pais);info.push(nd+' día'+(nd!==1?'s':'')+' hábil'+(nd!==1?'es':'')+'.');
-    var asu=[],rd=[],d=ini;
-    while(d<=fin){if(!isWeekend(d)){if(ASUETOS[pais][d])asu.push(fmt(d)+' ('+ASUETOS[pais][d]+')');if(RDC[pais][d])rd.push(fmt(d));}d=addDays(d,1);}
-    if(asu.length)warn.push('Incluye asueto: '+asu.join(', ')+'.');
-    if(rd.length)warn.push('Incluye reunión de ciclo: '+rd.join(', ')+'.');
-    // traslape con otros registros propios
-    var otros=GIRAS.filter(function(g){return g.user_id===FORM.user_id&&g.id!==FORM.id&&g.tipo!=='sin_gira'&&g.fecha_ini<=fin&&g.fecha_fin>=ini;});
-    if(otros.length)err.push('Se cruza con otro registro: '+otros.map(function(o){return fmt(o.fecha_ini)+'→'+fmt(o.fecha_fin)+' '+(o.destino||'');}).join(', ')+'.');
-    if(FORM.tipo==='campo'){
+  var pais=FORM.pais,c=FORM.c,info=[],warn=[],err=[];
+  if(FORM.tipo==='campo'){
+    var s=selOrden();
+    if(!s.length)err.push('Selecciona al menos un día.');
+    else{
+      info.push(s.length+' día'+(s.length!==1?'s':'')+' acompañado'+(s.length!==1?'s':'')+'.');
+      var asu=s.filter(function(d){return ASUETOS[pais][d];}),rd=s.filter(function(d){return RDC[pais][d];});
+      if(asu.length)warn.push('Incluye asueto: '+asu.map(function(d){return fmt(d)+' ('+ASUETOS[pais][d]+')';}).join(', ')+'.');
+      if(rd.length)warn.push('Incluye reunión de ciclo: '+rd.map(fmt).join(', ')+'.');
       var vm=$('gm-vm').value;
       if(vm){
-        var gv=GIRAS.filter(function(g){return g.user_id===vm&&g.tipo==='gira'&&g.pais===pais&&g.fecha_ini<=fin&&g.fecha_fin>=ini;});
-        if(gv.length)info.push(nombreCorto(persona(vm))+' estará de gira: '+gv.map(function(o){return (o.destino||'gira')+' ('+fmt(o.fecha_ini)+'→'+fmt(o.fecha_fin)+')';}).join(', ')+'.');
-        else info.push(nombreCorto(persona(vm))+' no tiene gira registrada esos días: la salida sería en su plaza.');
-        var otrosJ=GIRAS.filter(function(g){return g.tipo==='campo'&&g.visitador_id===vm&&g.id!==FORM.id&&g.fecha_ini<=fin&&g.fecha_fin>=ini;});
-        if(otrosJ.length)warn.push('Ya hay otra salida a campo con este VM en esas fechas.');
+        var gv=girasVM(vm),enG=s.filter(function(d){return gv.some(function(g){return cubre(g,d);});}),plaza=s.length-enG.length;
+        if(enG.length)info.push(enG.length+' en gira de '+nombreCorto(persona(vm))+'.');
+        if(plaza)info.push(plaza+' en su plaza (sin gira registrada).');
+        var otrosJ=GIRAS.filter(function(g){return g.tipo==='campo'&&g.visitador_id===vm&&g.id!==FORM.id&&g.user_id!==FORM.user_id&&s.some(function(d){return cubre(g,d);});});
+        if(otrosJ.length)warn.push('Ya hay otra visita acompañada con este VM en alguno de esos días.');
       }
-    }else{
-      var jf=GIRAS.filter(function(g){return g.tipo==='campo'&&g.visitador_id===FORM.user_id&&g.fecha_ini<=fin&&g.fecha_fin>=ini;});
-      if(jf.length)info.push('Tu jefe planificó salir contigo: '+jf.map(function(o){return fmt(o.fecha_ini)+'→'+fmt(o.fecha_fin);}).join(', ')+'.');
+      var mg=GIRAS.filter(function(g){return g.user_id===FORM.user_id&&g.tipo==='gira'&&g.pais===pais&&s.some(function(d){return cubre(g,d);});});
+      if(mg.length)info.push('Dentro de tu gira: '+mg.map(function(o){return o.destino||'gira';}).join(', ')+'.');
+    }
+  }else{
+    var ini=$('gm-ini').value,fin=$('gm-fin').value;
+    if(ini&&fin&&fin<ini)err.push('La fecha final es anterior a la inicial.');
+    if(ini&&(ini<c.ini||ini>c.fin)||fin&&(fin<c.ini||fin>c.fin))err.push('Las fechas deben estar dentro del ciclo '+c.c+' ('+fmt(c.ini)+' → '+fmt(c.fin)+').');
+    if(ini&&fin&&fin>=ini&&!err.length){
+      var nd=diasHabilesRango(ini,fin,pais);info.push(nd+' día'+(nd!==1?'s':'')+' hábil'+(nd!==1?'es':'')+'.');
+      var asu2=[],rd2=[],d=ini;
+      while(d<=fin){if(!isWeekend(d)){if(ASUETOS[pais][d])asu2.push(fmt(d)+' ('+ASUETOS[pais][d]+')');if(RDC[pais][d])rd2.push(fmt(d));}d=addDays(d,1);}
+      if(asu2.length)warn.push('Incluye asueto: '+asu2.join(', ')+'.');
+      if(rd2.length)warn.push('Incluye reunión de ciclo: '+rd2.join(', ')+'.');
+      var otros=GIRAS.filter(function(g){return g.user_id===FORM.user_id&&g.id!==FORM.id&&g.tipo==='gira'&&g.fecha_ini<=fin&&g.fecha_fin>=ini;});
+      if(otros.length)err.push('Se cruza con otra gira: '+otros.map(function(o){return fmt(o.fecha_ini)+'→'+fmt(o.fecha_fin)+' '+(o.destino||'');}).join(', ')+'.');
+      if(esJefeId(FORM.user_id)){
+        var mc=GIRAS.filter(function(g){return g.user_id===FORM.user_id&&g.tipo==='campo'&&g.pais===pais&&g.fecha_ini<=fin&&g.fecha_fin>=ini;});
+        if(mc.length)info.push('Visitas acompañadas en esas fechas: '+mc.map(function(o){return nombreCorto(persona(o.visitador_id))+' '+fmt(o.fecha_ini)+(o.fecha_fin!==o.fecha_ini?'→'+fmt(o.fecha_fin):'');}).join(', ')+'.');
+      }else{
+        var jf=GIRAS.filter(function(g){return g.tipo==='campo'&&g.visitador_id===FORM.user_id&&g.fecha_ini<=fin&&g.fecha_fin>=ini;});
+        if(jf.length)info.push('Tu jefe planificó salir contigo: '+jf.map(function(o){return fmt(o.fecha_ini)+'→'+fmt(o.fecha_fin);}).join(', ')+'.');
+      }
     }
   }
   if(FORM.c.fin<getToday())warn.push('Este ciclo ya cerró.');
@@ -981,26 +1108,49 @@ function validarForm(){
   $('gm-save').disabled=err.length>0;
   return err.length===0;
 }
+function idsLugares(dest){var ids=[],low=String(dest||'').toLowerCase();LUGARES[FORM.pais].forEach(function(l){if(low&&low.indexOf(l.name.toLowerCase())!==-1)ids.push(l.id);});return ids;}
 function guardarGira(ev){
   ev.preventDefault();
   if(!validarForm())return;
-  var campo=FORM.tipo==='campo',dest=$('gm-dest').value.trim();
-  if(campo&&!$('gm-vm').value){$('gm-err').textContent='Elige al visitador que vas a acompañar.';return;}
-  if(!campo&&!dest){$('gm-err').textContent='Indica el destino de la gira.';return;}
-  var ids=[],low=dest.toLowerCase();
-  LUGARES[FORM.pais].forEach(function(l){if(low.indexOf(l.name.toLowerCase())!==-1)ids.push(l.id);});
-  var row={user_id:FORM.user_id,tipo:FORM.tipo,pais:FORM.pais,ciclo:FORM.ciclo,anio:ANIO,fecha_ini:$('gm-ini').value,fecha_fin:$('gm-fin').value,
-    destino:dest,destino_ids:ids,visitador_id:campo?$('gm-vm').value:null,notas:$('gm-notas').value.trim()};
-  var b=$('gm-save');b.disabled=true;b.textContent='Guardando…';
+  var campo=FORM.tipo==='campo',dest=$('gm-dest').value.trim(),notas=$('gm-notas').value.trim();
+  var b=$('gm-save');
+  var fallo=function(msg){b.disabled=false;b.textContent='Guardar';$('gm-err').textContent=msg;};
+  if(campo){
+    var vm=$('gm-vm').value;
+    if(!vm){$('gm-err').textContent='Elige al visitador que vas a acompañar.';return;}
+    var ts=tramos(selOrden()),gv=girasVM(vm);
+    var rows=ts.map(function(t){
+      var de=dest;if(!de){var gg=gv.filter(function(g){return cubre(g,t.ini);})[0];if(gg)de=gg.destino||'';}
+      return {user_id:FORM.user_id,tipo:'campo',pais:FORM.pais,ciclo:FORM.ciclo,anio:ANIO,fecha_ini:t.ini,fecha_fin:t.fin,destino:de,destino_ids:idsLugares(de),visitador_id:vm,notas:notas};
+    });
+    b.disabled=true;b.textContent='Guardando…';
+    var ops=[],resto=rows;
+    if(FORM.id){ops.push(sb.from('giras_ciclo').update(rows[0]).eq('id',FORM.id).select());resto=rows.slice(1);}
+    if(resto.length)ops.push(sb.from('giras_ciclo').insert(resto).select());
+    Promise.all(ops).then(function(rs){
+      b.disabled=false;b.textContent='Guardar';
+      var e=rs.filter(function(r){return r.error||!r.data||!r.data.length;})[0];
+      if(e){recargarGiras();$('gm-err').textContent='No se pudo guardar'+(e.error?': '+e.error.message:'.');return;}
+      cerrar('g-modal');
+      var n=selOrden().length;
+      toast((FORM.id?'Cambios guardados':'Visita acompañada planificada')+' · '+n+' día'+(n!==1?'s':'')+' con '+nombreCorto(persona(vm)));
+      recargarGiras();
+    },function(){fallo('Sin conexión. Intenta de nuevo.');});
+    return;
+  }
+  if(!dest){$('gm-err').textContent='Indica el destino de la gira.';return;}
+  var row={user_id:FORM.user_id,tipo:'gira',pais:FORM.pais,ciclo:FORM.ciclo,anio:ANIO,fecha_ini:$('gm-ini').value,fecha_fin:$('gm-fin').value,
+    destino:dest,destino_ids:idsLugares(dest),visitador_id:null,notas:notas};
+  b.disabled=true;b.textContent='Guardando…';
   var q=FORM.id?sb.from('giras_ciclo').update(row).eq('id',FORM.id).select():sb.from('giras_ciclo').insert(row).select();
   q.then(function(r){
     b.disabled=false;b.textContent='Guardar';
     if(r.error||!r.data||!r.data.length){$('gm-err').textContent='No se pudo guardar'+(r.error?': '+r.error.message:'.');return;}
     // si existía la marca "sin gira", se quita al registrar una gira
-    if(!campo){var sg=GIRAS.filter(function(g){return g.user_id===FORM.user_id&&g.tipo==='sin_gira'&&g.pais===FORM.pais&&g.ciclo===FORM.ciclo&&g.anio===ANIO;})[0];
-      if(sg)sb.from('giras_ciclo').delete().eq('id',sg.id).then(recargarGiras);}
-    cerrar('g-modal');toast(FORM.id?'Cambios guardados':(campo?'Salida a campo planificada':'Gira registrada'));recargarGiras();
-  },function(){b.disabled=false;b.textContent='Guardar';$('gm-err').textContent='Sin conexión. Intenta de nuevo.';});
+    var sg=GIRAS.filter(function(g){return g.user_id===FORM.user_id&&g.tipo==='sin_gira'&&g.pais===FORM.pais&&g.ciclo===FORM.ciclo&&g.anio===ANIO;})[0];
+    if(sg)sb.from('giras_ciclo').delete().eq('id',sg.id).then(recargarGiras);
+    cerrar('g-modal');toast(FORM.id?'Cambios guardados':'Gira registrada');recargarGiras();
+  },function(){fallo('Sin conexión. Intenta de nuevo.');});
 }
 function eliminarGira(){
   if(!FORM||!FORM.id||!confirm('¿Eliminar este registro?'))return;
